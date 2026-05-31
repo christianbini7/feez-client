@@ -8,7 +8,7 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
@@ -21,40 +21,39 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Check project structure
+      - name: Find Flutter project
+        id: find_project
         run: |
-          echo "=== Root ==="
-          ls -la
-          echo "=== Looking for pubspec.yaml ==="
-          find . -name "pubspec.yaml" -not -path "*/.*"
+          FLUTTER_DIR=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
+          echo "dir=$FLUTTER_DIR" >> $GITHUB_OUTPUT
+          echo "Flutter project: $FLUTTER_DIR"
 
       - name: Get dependencies
         run: |
-          # Trouve automatiquement le dossier Flutter
-          FLUTTER_DIR=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
-          echo "Flutter project found at: $FLUTTER_DIR"
-          cd $FLUTTER_DIR
+          cd ${{ steps.find_project.outputs.dir }}
           flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd ${{ steps.find_project.outputs.dir }}/ios
+          pod install --repo-update
 
       - name: Build iOS release
         run: |
-          FLUTTER_DIR=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
-          cd $FLUTTER_DIR
+          cd ${{ steps.find_project.outputs.dir }}
           flutter build ios --release --no-codesign
 
       - name: Create IPA
         run: |
-          FLUTTER_DIR=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
-          cd $FLUTTER_DIR
+          cd ${{ steps.find_project.outputs.dir }}
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/Runner.app
           zip -r Feez.ipa Payload/
-          echo "IPA size: $(du -sh Feez.ipa)"
+          echo "IPA: $(du -sh Feez.ipa)"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: Feez-iOS-${{ github.run_number }}
-          path: |
-            **/Feez.ipa
+          path: "**/Feez.ipa"
           retention-days: 7

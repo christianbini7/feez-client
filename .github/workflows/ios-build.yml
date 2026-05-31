@@ -11,45 +11,39 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Flutter setup
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: stable
           cache: true
 
-      - name: Find Flutter project
-        id: find_project
+      - name: Find Flutter dir
+        id: proj
         run: |
-          FLUTTER_DIR=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
-          echo "dir=$FLUTTER_DIR" >> $GITHUB_OUTPUT
-          echo "Flutter project: $FLUTTER_DIR"
+          DIR=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
+          echo "dir=$DIR" >> $GITHUB_OUTPUT
+          echo "Found: $DIR"
 
-      - name: Get dependencies
+      - name: Flutter pub get
         run: |
-          cd ${{ steps.find_project.outputs.dir }}
+          cd ${{ steps.proj.outputs.dir }}
           flutter pub get
 
-      - name: Install CocoaPods
+      - name: Build iOS (flutter handles pods)
         run: |
-          cd ${{ steps.find_project.outputs.dir }}/ios
-          pod install --repo-update
-
-      - name: Build iOS release
-        run: |
-          cd ${{ steps.find_project.outputs.dir }}
+          cd ${{ steps.proj.outputs.dir }}
           flutter build ios --release --no-codesign
 
-      - name: Create IPA
+      - name: Package IPA
         run: |
-          cd ${{ steps.find_project.outputs.dir }}
+          cd ${{ steps.proj.outputs.dir }}
           mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/Runner.app
+          cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r Feez.ipa Payload/
-          echo "IPA: $(du -sh Feez.ipa)"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4

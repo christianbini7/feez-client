@@ -21,35 +21,34 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Find Flutter dir
+      - name: Find Flutter project dir
         id: proj
         run: |
           DIR=$(find . -name "pubspec.yaml" -not -path "*/.*" | head -1 | xargs dirname)
           echo "dir=$DIR" >> $GITHUB_OUTPUT
-          echo "Found: $DIR"
+          echo "Project dir: $DIR"
 
       - name: Flutter pub get
         run: |
           cd ${{ steps.proj.outputs.dir }}
           flutter pub get
 
-      - name: Create iOS platform if missing
+      - name: Generate iOS project
         run: |
           cd ${{ steps.proj.outputs.dir }}
-          if [ ! -d "ios/Runner.xcodeproj" ]; then
-            echo "iOS project missing, generating..."
-            flutter create --platforms=ios . --project-name feez_client
-          else
-            echo "iOS project exists"
-          fi
+          flutter create --platforms=ios . --project-name feez_client
+          echo "--- Podfile content ---"
+          cat ios/Podfile
 
-      - name: Fix iOS minimum version
+      - name: Fix iOS 14.0 minimum
         run: |
           cd ${{ steps.proj.outputs.dir }}/ios
-          # Fix Podfile platform version
-          sed -i '' 's/platform :ios.*/platform :ios, '\''14.0'\''/' Podfile 2>/dev/null || true
-          # Fix project deployment target
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' Runner.xcodeproj/project.pbxproj 2>/dev/null || true
+          sed -i '' "s/# platform :ios.*/platform :ios, '14.0'/" Podfile
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '14.0'/" Podfile
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' \
+            Runner.xcodeproj/project.pbxproj
+          echo "--- Podfile after fix ---"
+          cat Podfile
 
       - name: Build iOS
         run: |

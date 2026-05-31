@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feez — Schéma Supabase SQL</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --red: #E8192C; --ink: #0D0D0D; --mid: #555; --low: #888;
+  --line: #E8E8E8; --off: #F6F6F6; --white: #fff;
+  --code-bg: #0F1117; --code-border: #1E2030;
+  --kw: #C792EA; --fn: #82AAFF; --st: #C3E88D;
+  --cm: #546E7A; --nm: #F78C6C; --tp: #FFCB6B; --op: #89DDFF;
+  --fd: 'Barlow Condensed',sans-serif; --fb: 'DM Sans',sans-serif; --fm: 'DM Mono',monospace;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--fb); background: var(--white); color: var(--ink); -webkit-font-smoothing: antialiased; line-height: 1.6; }
+
+.hero { background: var(--ink); padding: 48px 60px; position: relative; overflow: hidden; }
+.hero::before { content:''; position:absolute; right:-60px; top:-60px; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,rgba(232,25,44,.15) 0%,transparent 60%); }
+.hero-inner { max-width: 960px; margin: 0 auto; position: relative; z-index: 2; }
+.hero-tag { font-size:10px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--red); margin-bottom:12px; }
+.hero-title { font-family:var(--fd); font-size:clamp(40px,6vw,70px); font-weight:900; color:white; letter-spacing:-.02em; line-height:1.02; margin-bottom:14px; }
+.hero-title span { color:var(--red); }
+.hero-sub { font-size:15px; font-weight:300; color:rgba(255,255,255,.4); max-width:560px; line-height:1.75; margin-bottom:28px; }
+.hero-pills { display:flex; gap:8px; flex-wrap:wrap; }
+.hp { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:5px 12px; font-size:11px; font-weight:600; color:rgba(255,255,255,.5); }
+
+.body { max-width: 960px; margin: 0 auto; padding: 0 60px 80px; }
+
+/* TOC */
+.toc { background: var(--off); border-radius: 16px; padding: 20px 24px; margin: 36px 0 0; border: 1px solid var(--line); }
+.toc-title { font-family:var(--fd); font-size:15px; font-weight:900; color:var(--ink); margin-bottom:12px; letter-spacing:.04em; }
+.toc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.toc-item { font-size:12px; font-weight:600; color:var(--mid); padding:5px 8px; border-radius:7px; cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:6px; }
+.toc-item:hover { background:white; color:var(--red); }
+.toc-num { font-size:10px; font-weight:700; color:var(--low); }
+
+.section { padding: 48px 0 0; }
+.section-tag { font-size:10px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; margin-bottom:5px; display:block; }
+.section-title { font-family:var(--fd); font-size:clamp(28px,4vw,42px); font-weight:900; color:var(--ink); letter-spacing:-.02em; margin-bottom:10px; }
+.section-sub { font-size:14px; color:var(--mid); line-height:1.7; margin-bottom:24px; max-width:640px; }
+
+/* Code blocks */
+.code-wrap { background:var(--code-bg); border:1px solid var(--code-border); border-radius:14px; overflow:hidden; margin-bottom:20px; }
+.code-header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:rgba(255,255,255,.03); border-bottom:1px solid var(--code-border); }
+.code-label { font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.3); }
+.code-copy { font-size:10px; font-weight:600; color:rgba(255,255,255,.3); background:transparent; border:1px solid rgba(255,255,255,.1); border-radius:5px; padding:3px 8px; cursor:pointer; transition:all .15s; font-family:var(--fb); }
+.code-copy:hover { color:white; border-color:rgba(255,255,255,.3); }
+pre { padding:18px 20px; overflow-x:auto; font-family:var(--fm); font-size:12.5px; line-height:1.75; color:#E4E4E7; }
+.kw { color:#C792EA; } .fn { color:#82AAFF; } .st { color:#C3E88D; }
+.cm { color:#546E7A; font-style:italic; } .nm { color:#F78C6C; }
+.tp { color:#FFCB6B; } .op { color:#89DDFF; }
+
+/* Info boxes */
+.info-box { border-radius:12px; padding:14px 16px; margin-bottom:18px; display:flex; gap:12px; align-items:flex-start; }
+.info-box.tip  { background:rgba(0,196,122,.07); border:1px solid rgba(0,196,122,.2); }
+.info-box.warn { background:rgba(255,107,0,.07); border:1px solid rgba(255,107,0,.2); }
+.info-box.note { background:rgba(37,99,235,.07); border:1px solid rgba(37,99,235,.2); }
+.ib-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.ib-body p { font-size:13px; line-height:1.6; }
+.info-box.tip  .ib-body p { color:#007A4C; }
+.info-box.warn .ib-body p { color:#CC5500; }
+.info-box.note .ib-body p { color:#1D4ED8; }
+.ib-title { font-weight:700; margin-bottom:3px; }
+
+/* Role table */
+.role-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+.role-card { background:var(--off); border-radius:12px; padding:14px; border:1px solid var(--line); }
+.role-card.super { background:rgba(232,25,44,.05); border-color:rgba(232,25,44,.2); }
+.rc-title { font-family:var(--fd); font-size:16px; font-weight:900; color:var(--ink); margin-bottom:4px; }
+.rc-badge { display:inline-block; font-size:9px; font-weight:800; padding:2px 8px; border-radius:4px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
+.rc-badge.s { background:var(--red); color:white; }
+.rc-badge.a { background:rgba(37,99,235,.12); color:#1D4ED8; }
+.rc-badge.m { background:rgba(0,196,122,.12); color:#007A4C; }
+.rc-perm { font-size:11px; color:var(--mid); line-height:1.7; }
+.rc-perm span { display:block; }
+.rc-perm span::before { content:'✓ '; color:#00C47A; font-weight:700; }
+.rc-perm span.no::before { content:'✕ '; color:var(--red); }
+
+/* Schema diagram */
+.schema-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+.schema-table { background:var(--code-bg); border:1px solid var(--code-border); border-radius:12px; overflow:hidden; }
+.st-header { padding:9px 14px; border-bottom:1px solid var(--code-border); }
+.st-name { font-family:var(--fm); font-size:13px; font-weight:500; color:#FFCB6B; }
+.st-desc { font-size:10px; color:rgba(255,255,255,.3); margin-top:1px; }
+.st-col { display:flex; align-items:center; justify-content:space-between; padding:5px 14px; border-bottom:1px solid rgba(255,255,255,.04); }
+.st-col:last-child { border-bottom:none; }
+.sc-name { font-family:var(--fm); font-size:11px; color:#82AAFF; }
+.sc-type { font-family:var(--fm); font-size:10px; color:#C792EA; }
+.sc-note { font-size:9px; color:rgba(255,255,255,.3); }
+.sc-pk { font-size:8px; background:rgba(255,203,107,.15); color:#FFCB6B; padding:1px 5px; border-radius:3px; margin-left:4px; font-weight:700; }
+.sc-fk { font-size:8px; background:rgba(130,170,255,.12); color:#82AAFF; padding:1px 5px; border-radius:3px; margin-left:4px; font-weight:700; }
+
+.divider { height:1px; background:var(--line); margin:40px 0 0; }
+
+.doc-footer { background:var(--ink); padding:36px 60px; display:flex; align-items:center; justify-content:space-between; margin-top:0; }
+.df-logo { font-family:var(--fd); font-size:24px; font-weight:900; color:white; font-style:italic; }
+.df-logo span { color:var(--red); }
+.df-copy { font-size:11px; color:rgba(255,255,255,.25); letter-spacing:.1em; text-transform:uppercase; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <p class="hero-tag">Feez — Architecture Backend</p>
+    <h1 class="hero-title">Schéma<br><span>Supabase SQL</span></h1>
+    <p class="hero-sub">Toutes les tables, relations, politiques RLS et rôles admin. Copier-coller directement dans l'éditeur SQL de Supabase. Production-ready.</p>
+    <div class="hero-pills">
+      <span class="hp">PostgreSQL 15</span>
+      <span class="hp">Supabase Auth</span>
+      <span class="hp">Row Level Security</span>
+      <span class="hp">RBAC 6 rôles</span>
+      <span class="hp">Realtime GPS</span>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <div class="toc">
+    <p class="toc-title">Table des matières</p>
+    <div class="toc-grid">
+      <div class="toc-item" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})"><span class="toc-num">01</span>Extensions & setup</div>
+      <div class="toc-item" onclick="document.getElementById('s2').scrollIntoView({behavior:'smooth'})"><span class="toc-num">02</span>Rôles & permissions admin</div>
+      <div class="toc-item" onclick="document.getElementById('s3').scrollIntoView({behavior:'smooth'})"><span class="toc-num">03</span>Utilisateurs clients</div>
+      <div class="toc-item" onclick="document.getElementById('s4').scrollIntoView({behavior:'smooth'})"><span class="toc-num">04</span>Catalogue produits</div>
+      <div class="toc-item" onclick="document.getElementById('s5').scrollIntoView({behavior:'smooth'})"><span class="toc-num">05</span>Stocks & inventaire</div>
+      <div class="toc-item" onclick="document.getElementById('s6').scrollIntoView({behavior:'smooth'})"><span class="toc-num">06</span>Restaurants & menus</div>
+      <div class="toc-item" onclick="document.getElementById('s7').scrollIntoView({behavior:'smooth'})"><span class="toc-num">07</span>Livreurs</div>
+      <div class="toc-item" onclick="document.getElementById('s8').scrollIntoView({behavior:'smooth'})"><span class="toc-num">08</span>Commandes</div>
+      <div class="toc-item" onclick="document.getElementById('s9').scrollIntoView({behavior:'smooth'})"><span class="toc-num">09</span>Promotions</div>
+      <div class="toc-item" onclick="document.getElementById('s10').scrollIntoView({behavior:'smooth'})"><span class="toc-num">10</span>Paiements</div>
+      <div class="toc-item" onclick="document.getElementById('s11').scrollIntoView({behavior:'smooth'})"><span class="toc-num">11</span>Zones de livraison</div>
+      <div class="toc-item" onclick="document.getElementById('s12').scrollIntoView({behavior:'smooth'})"><span class="toc-num">12</span>Row Level Security</div>
+    </div>
+  </div>
+
+<!-- ═══ 01 SETUP ═══ -->
+<div class="section" id="s1">
+  <span class="section-tag" style="color:var(--red);">01</span>
+  <h2 class="section-title">Extensions & setup initial</h2>
+  <p class="section-sub">À exécuter en premier dans l'éditeur SQL de Supabase. Active les extensions nécessaires et configure le schéma.</p>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">setup.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="cm">-- ══════════════════════════════════════════════════
+-- FEEZ — Setup initial
+-- Exécuter dans : Supabase Dashboard → SQL Editor
+-- ══════════════════════════════════════════════════</span>
+
+<span class="cm">-- Extensions nécessaires</span>
+<span class="kw">CREATE EXTENSION IF NOT EXISTS</span> <span class="st">"uuid-ossp"</span>;       <span class="cm">-- UUIDs auto</span>
+<span class="kw">CREATE EXTENSION IF NOT EXISTS</span> <span class="st">"pgcrypto"</span>;        <span class="cm">-- Chiffrement</span>
+<span class="kw">CREATE EXTENSION IF NOT EXISTS</span> <span class="st">"postgis"</span>;         <span class="cm">-- GPS / géolocalisation</span>
+<span class="kw">CREATE EXTENSION IF NOT EXISTS</span> <span class="st">"pg_trgm"</span>;         <span class="cm">-- Recherche texte rapide</span>
+
+<span class="cm">-- Fonction utilitaire : timestamp automatique</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="fn">update_updated_at</span>()
+<span class="kw">RETURNS TRIGGER AS</span> $$
+<span class="kw">BEGIN</span>
+  <span class="kw">NEW</span>.updated_at = <span class="fn">NOW</span>();
+  <span class="kw">RETURN NEW</span>;
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql;
+
+<span class="cm">-- Fonction : générer un numéro de commande lisible</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="fn">generate_order_ref</span>()
+<span class="kw">RETURNS TEXT AS</span> $$
+<span class="kw">BEGIN</span>
+  <span class="kw">RETURN</span> <span class="st">'FZ-'</span> || <span class="fn">LPAD</span>(<span class="fn">FLOOR</span>(<span class="fn">RANDOM</span>() * <span class="nm">9000</span> + <span class="nm">1000</span>)::<span class="tp">TEXT</span>, <span class="nm">4</span>, <span class="st">'0'</span>);
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql;</pre>
+  </div>
+</div>
+
+<!-- ═══ 02 ROLES ═══ -->
+<div class="section divider" id="s2" style="padding-top:48px;">
+  <span class="section-tag" style="color:var(--red);">02</span>
+  <h2 class="section-title">Rôles & permissions admin</h2>
+  <p class="section-sub">Système RBAC (Role-Based Access Control) complet. Chaque admin a un rôle avec des permissions précises sur chaque ressource.</p>
+
+  <div class="role-grid">
+    <div class="role-card super">
+      <p class="rc-title">Super Admin</p>
+      <span class="rc-badge s">Niveau 1</span>
+      <div class="rc-perm">
+        <span>Accès total illimité</span>
+        <span>Créer / supprimer des admins</span>
+        <span>Voir les logs système</span>
+        <span>Configurer Feez</span>
+      </div>
+    </div>
+    <div class="role-card">
+      <p class="rc-title">Admin Opérations</p>
+      <span class="rc-badge a">Niveau 2</span>
+      <div class="rc-perm">
+        <span>Gérer les commandes</span>
+        <span>Gérer les livreurs</span>
+        <span>Voir les zones</span>
+        <span class="no">Modifier les prix</span>
+      </div>
+    </div>
+    <div class="role-card">
+      <p class="rc-title">Admin Catalogue</p>
+      <span class="rc-badge a">Niveau 2</span>
+      <div class="rc-perm">
+        <span>Ajouter / modifier produits</span>
+        <span>Gérer les catégories</span>
+        <span>Créer des promos</span>
+        <span class="no">Voir les paiements</span>
+      </div>
+    </div>
+    <div class="role-card">
+      <p class="rc-title">Gestionnaire Stock</p>
+      <span class="rc-badge m">Niveau 3</span>
+      <div class="rc-perm">
+        <span>Voir les produits</span>
+        <span>Modifier les quantités</span>
+        <span>Alertes rupture</span>
+        <span class="no">Modifier les prix</span>
+      </div>
+    </div>
+    <div class="role-card">
+      <p class="rc-title">Admin Partenaires</p>
+      <span class="rc-badge m">Niveau 3</span>
+      <div class="rc-perm">
+        <span>Gérer les restaurants</span>
+        <span>Valider les menus</span>
+        <span>Voir les performances</span>
+        <span class="no">Commandes Market</span>
+      </div>
+    </div>
+    <div class="role-card">
+      <p class="rc-title">Support Client</p>
+      <span class="rc-badge m">Niveau 3</span>
+      <div class="rc-perm">
+        <span>Voir les commandes</span>
+        <span>Émettre remboursements</span>
+        <span>Gérer les tickets</span>
+        <span class="no">Modifier catalogue</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">admin_roles.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="cm">-- ══ TABLES ADMIN ROLES & PERMISSIONS ══</span>
+
+<span class="kw">CREATE TABLE</span> <span class="tp">admin_roles</span> (
+  id           <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  name         <span class="tp">text</span> <span class="kw">NOT NULL UNIQUE</span>,   <span class="cm">-- 'super_admin', 'ops', 'catalog'…</span>
+  display_name <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  level        <span class="tp">int2</span> <span class="kw">NOT NULL</span>,           <span class="cm">-- 1=Super, 2=Admin, 3=Manager</span>
+  color        <span class="tp">text</span>,                     <span class="cm">-- Couleur dans le dashboard</span>
+  created_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">admin_permissions</span> (
+  id           <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  role_id      <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">admin_roles</span>(id) <span class="kw">ON DELETE CASCADE</span>,
+  resource     <span class="tp">text</span> <span class="kw">NOT NULL</span>,           <span class="cm">-- 'products', 'orders', 'riders'…</span>
+  can_view     <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  can_create   <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  can_edit     <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  can_delete   <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  <span class="kw">UNIQUE</span>(role_id, resource)
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">admin_users</span> (
+  id           <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  auth_id      <span class="fn">uuid</span> <span class="kw">REFERENCES</span> auth.users(id) <span class="kw">ON DELETE CASCADE UNIQUE</span>,
+  role_id      <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">admin_roles</span>(id),
+  first_name   <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  last_name    <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  email        <span class="tp">text</span> <span class="kw">NOT NULL UNIQUE</span>,
+  phone        <span class="tp">text</span>,
+  avatar_url   <span class="tp">text</span>,
+  is_active    <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  last_login   <span class="tp">timestamptz</span>,
+  created_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>(),
+  updated_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">admin_audit_logs</span> (
+  id           <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  admin_id     <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">admin_users</span>(id),
+  action       <span class="tp">text</span> <span class="kw">NOT NULL</span>,           <span class="cm">-- 'CREATE', 'UPDATE', 'DELETE'</span>
+  resource     <span class="tp">text</span> <span class="kw">NOT NULL</span>,           <span class="cm">-- Table concernée</span>
+  resource_id  <span class="tp">text</span>,                     <span class="cm">-- ID de l'enregistrement</span>
+  old_data     <span class="tp">jsonb</span>,                    <span class="cm">-- Données avant modification</span>
+  new_data     <span class="tp">jsonb</span>,                    <span class="cm">-- Données après modification</span>
+  ip_address   <span class="tp">text</span>,
+  created_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="cm">-- Insérer les rôles de base</span>
+<span class="kw">INSERT INTO</span> <span class="tp">admin_roles</span> (name, display_name, level, color) <span class="kw">VALUES</span>
+  (<span class="st">'super_admin'</span>,   <span class="st">'Super Admin'</span>,          <span class="nm">1</span>, <span class="st">'#E8192C'</span>),
+  (<span class="st">'ops_admin'</span>,     <span class="st">'Admin Opérations'</span>,     <span class="nm">2</span>, <span class="st">'#2563EB'</span>),
+  (<span class="st">'catalog_admin'</span>, <span class="st">'Admin Catalogue'</span>,      <span class="nm">2</span>, <span class="st">'#7C3AED'</span>),
+  (<span class="st">'stock_manager'</span>, <span class="st">'Gestionnaire Stock'</span>,    <span class="nm">3</span>, <span class="st">'#00C47A'</span>),
+  (<span class="st">'partner_admin'</span>, <span class="st">'Admin Partenaires'</span>,    <span class="nm">3</span>, <span class="st">'#FF6B00'</span>),
+  (<span class="st">'support'</span>,       <span class="st">'Support Client'</span>,        <span class="nm">3</span>, <span class="st">'#888888'</span>);</pre>
+  </div>
+</div>
+
+<!-- ═══ 03 USERS ═══ -->
+<div class="section divider" id="s3" style="padding-top:48px;">
+  <span class="section-tag" style="color:var(--red);">03</span>
+  <h2 class="section-title">Utilisateurs clients</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">users.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">users</span> (
+  id           <span class="fn">uuid</span> <span class="kw">REFERENCES</span> auth.users(id) <span class="kw">ON DELETE CASCADE PRIMARY KEY</span>,
+  phone        <span class="tp">text</span> <span class="kw">UNIQUE NOT NULL</span>,     <span class="cm">-- +225XXXXXXXXXX</span>
+  first_name   <span class="tp">text</span>,
+  last_name    <span class="tp">text</span>,
+  email        <span class="tp">text</span>,
+  avatar_url   <span class="tp">text</span>,
+  fcm_token    <span class="tp">text</span>,                     <span class="cm">-- Firebase push notifications</span>
+  is_active    <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  created_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>(),
+  updated_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">user_addresses</span> (
+  id           <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  user_id      <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">users</span>(id) <span class="kw">ON DELETE CASCADE</span>,
+  label        <span class="tp">text</span>,                     <span class="cm">-- 'Maison', 'Bureau'…</span>
+  address      <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  lat          <span class="tp">float8</span>,
+  lng          <span class="tp">float8</span>,
+  zone         <span class="tp">text</span>,                     <span class="cm">-- 'cocody', 'plateau'…</span>
+  is_default   <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  created_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="cm">-- Trigger : updated_at auto</span>
+<span class="kw">CREATE TRIGGER</span> <span class="fn">users_updated_at</span>
+  <span class="kw">BEFORE UPDATE ON</span> <span class="tp">users</span>
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> <span class="fn">update_updated_at</span>();</pre>
+  </div>
+</div>
+
+<!-- ═══ 04 CATALOGUE ═══ -->
+<div class="section divider" id="s4" style="padding-top:48px;">
+  <span class="section-tag" style="color:var(--red);">04</span>
+  <h2 class="section-title">Catalogue produits</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">products.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">categories</span> (
+  id           <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  name         <span class="tp">text</span> <span class="kw">NOT NULL UNIQUE</span>,   <span class="cm">-- 'epicerie', 'pharmacie'…</span>
+  display_name <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  icon         <span class="tp">text</span>,                     <span class="cm">-- emoji ou URL icône</span>
+  sort_order   <span class="tp">int2</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  is_active    <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">products</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  category_id     <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">categories</span>(id),
+  name            <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  description     <span class="tp">text</span>,
+  unit            <span class="tp">text</span>,               <span class="cm">-- 'Pièce', '500g', 'Boîte 30'…</span>
+  price           <span class="tp">int4</span> <span class="kw">NOT NULL</span>,       <span class="cm">-- Prix en FCFA</span>
+  old_price       <span class="tp">int4</span>,               <span class="cm">-- Prix avant promo (null = pas de promo)</span>
+  cost_price      <span class="tp">int4</span>,               <span class="cm">-- Prix d'achat (confidentiel)</span>
+  image_url       <span class="tp">text</span>,               <span class="cm">-- URL Supabase Storage</span>
+  images          <span class="tp">text[]</span>,             <span class="cm">-- Galerie photos</span>
+  emoji           <span class="tp">text</span>,               <span class="cm">-- Fallback si pas d'image</span>
+  tag             <span class="tp">text</span>,               <span class="cm">-- 'BIO', 'TOP', 'NOUVEAU', null</span>
+  tags            <span class="tp">text[]</span>,             <span class="cm">-- Tags multiples pour filtres</span>
+  barcode         <span class="tp">text</span>,               <span class="cm">-- Code-barres pour scan stock</span>
+  is_available    <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  is_featured     <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,  <span class="cm">-- Produit mis en avant</span>
+  sort_order      <span class="tp">int2</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  created_by      <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">admin_users</span>(id),
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>(),
+  updated_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="cm">-- Index pour la recherche rapide</span>
+<span class="kw">CREATE INDEX</span> idx_products_name <span class="kw">ON</span> <span class="tp">products</span> <span class="kw">USING</span> gin(name gin_trgm_ops);
+<span class="kw">CREATE INDEX</span> idx_products_cat  <span class="kw">ON</span> <span class="tp">products</span>(category_id);
+<span class="kw">CREATE INDEX</span> idx_products_avail <span class="kw">ON</span> <span class="tp">products</span>(is_available);
+
+<span class="kw">CREATE TRIGGER</span> <span class="fn">products_updated_at</span>
+  <span class="kw">BEFORE UPDATE ON</span> <span class="tp">products</span>
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> <span class="fn">update_updated_at</span>();
+
+<span class="cm">-- Insérer les catégories de base</span>
+<span class="kw">INSERT INTO</span> <span class="tp">categories</span> (name, display_name, icon, sort_order) <span class="kw">VALUES</span>
+  (<span class="st">'epicerie'</span>,   <span class="st">'Épicerie'</span>,   <span class="st">'🛒'</span>, <span class="nm">1</span>),
+  (<span class="st">'pharmacie'</span>,  <span class="st">'Pharmacie'</span>,  <span class="st">'💊'</span>, <span class="nm">2</span>),
+  (<span class="st">'beaute'</span>,     <span class="st">'Beauté'</span>,     <span class="st">'🧴'</span>, <span class="nm">3</span>),
+  (<span class="st">'boucherie'</span>,  <span class="st">'Boucherie'</span>,  <span class="st">'🥩'</span>, <span class="nm">4</span>),
+  (<span class="st">'boissons'</span>,   <span class="st">'Boissons'</span>,   <span class="st">'🥤'</span>, <span class="nm">5</span>),
+  (<span class="st">'boulangerie'</span>,<span class="st">'Boulangerie'</span>,<span class="st">'🥖'</span>, <span class="nm">6</span>);</pre>
+  </div>
+</div>
+
+<!-- ═══ 05 STOCKS ═══ -->
+<div class="section divider" id="s5" style="padding-top:48px;">
+  <span class="section-tag" style="color:#00C47A;">05</span>
+  <h2 class="section-title">Stocks & inventaire</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">inventory.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">inventory</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  product_id      <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">products</span>(id) <span class="kw">ON DELETE CASCADE UNIQUE</span>,
+  quantity        <span class="tp">int4</span> <span class="kw">NOT NULL DEFAULT</span> <span class="nm">0</span>,
+  reserved        <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,      <span class="cm">-- Réservé par commandes en cours</span>
+  alert_threshold <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">5</span>,      <span class="cm">-- Alerte si quantité < seuil</span>
+  last_restock    <span class="tp">timestamptz</span>,
+  updated_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="cm">-- Vue disponible réelle (quantité - réservé)</span>
+<span class="kw">CREATE VIEW</span> <span class="fn">inventory_available</span> <span class="kw">AS</span>
+  <span class="kw">SELECT</span>
+    i.*,
+    p.name, p.emoji, p.price, p.category_id,
+    (i.quantity - i.reserved) <span class="kw">AS</span> available,
+    (i.quantity - i.reserved) < i.alert_threshold <span class="kw">AS</span> low_stock
+  <span class="kw">FROM</span> <span class="tp">inventory</span> i
+  <span class="kw">JOIN</span> <span class="tp">products</span> p <span class="kw">ON</span> i.product_id = p.id;
+
+<span class="kw">CREATE TABLE</span> <span class="tp">inventory_movements</span> (
+  id           <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  product_id   <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">products</span>(id),
+  type         <span class="tp">text</span> <span class="kw">NOT NULL</span>,         <span class="cm">-- 'in', 'out', 'adjustment', 'reserved'</span>
+  quantity     <span class="tp">int4</span> <span class="kw">NOT NULL</span>,
+  reason       <span class="tp">text</span>,                   <span class="cm">-- 'order_#FZ-4847', 'restock', 'loss'…</span>
+  admin_id     <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">admin_users</span>(id),
+  created_at   <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="cm">-- Fonction : mettre à jour le stock automatiquement après une commande</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="fn">decrement_stock</span>(p_id <span class="tp">uuid</span>, qty <span class="tp">int4</span>)
+<span class="kw">RETURNS void AS</span> $$
+<span class="kw">BEGIN</span>
+  <span class="kw">UPDATE</span> <span class="tp">inventory</span>
+  <span class="kw">SET</span> quantity = quantity - qty, updated_at = <span class="fn">NOW</span>()
+  <span class="kw">WHERE</span> product_id = p_id;
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql;</pre>
+  </div>
+</div>
+
+<!-- ═══ 06 RESTAURANTS ═══ -->
+<div class="section divider" id="s6" style="padding-top:48px;">
+  <span class="section-tag" style="color:#FF6B00;">06</span>
+  <h2 class="section-title">Restaurants & menus</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">restaurants.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">restaurants</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  owner_auth_id   <span class="fn">uuid</span> <span class="kw">REFERENCES</span> auth.users(id),
+  name            <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  description     <span class="tp">text</span>,
+  cuisine_type    <span class="tp">text</span>,               <span class="cm">-- 'ivoirien', 'pizza', 'asiatique'…</span>
+  logo_url        <span class="tp">text</span>,
+  cover_url       <span class="tp">text</span>,
+  phone           <span class="tp">text</span>,
+  address         <span class="tp">text</span>,
+  lat             <span class="tp">float8</span>,
+  lng             <span class="tp">float8</span>,
+  zone            <span class="tp">text</span>,
+  rating          <span class="tp">float4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  review_count    <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  min_order       <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,      <span class="cm">-- Commande minimum en FCFA</span>
+  delivery_time   <span class="tp">text</span>,               <span class="cm">-- '25-35 min'</span>
+  commission_rate <span class="tp">float4</span> <span class="kw">DEFAULT</span> <span class="nm">0.20</span>, <span class="cm">-- Part Feez (20%)</span>
+  is_open         <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  is_active       <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">menu_categories</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  restaurant_id   <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">restaurants</span>(id) <span class="kw">ON DELETE CASCADE</span>,
+  name            <span class="tp">text</span> <span class="kw">NOT NULL</span>,       <span class="cm">-- 'Entrées', 'Plats', 'Desserts'</span>
+  sort_order      <span class="tp">int2</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">menu_items</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  restaurant_id   <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">restaurants</span>(id) <span class="kw">ON DELETE CASCADE</span>,
+  category_id     <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">menu_categories</span>(id),
+  name            <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  description     <span class="tp">text</span>,
+  price           <span class="tp">int4</span> <span class="kw">NOT NULL</span>,
+  image_url       <span class="tp">text</span>,
+  emoji           <span class="tp">text</span>,
+  is_available    <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  is_popular      <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  sort_order      <span class="tp">int2</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>
+);</pre>
+  </div>
+</div>
+
+<!-- ═══ 07 LIVREURS ═══ -->
+<div class="section divider" id="s7" style="padding-top:48px;">
+  <span class="section-tag" style="color:#00C47A;">07</span>
+  <h2 class="section-title">Livreurs</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">riders.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">riders</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  auth_id         <span class="fn">uuid</span> <span class="kw">REFERENCES</span> auth.users(id) <span class="kw">ON DELETE CASCADE UNIQUE</span>,
+  first_name      <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  last_name       <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  phone           <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  avatar_url      <span class="tp">text</span>,
+  vehicle_type    <span class="tp">text</span>,               <span class="cm">-- 'moto', 'vélo', 'voiture'</span>
+  vehicle_plate   <span class="tp">text</span>,
+  zone            <span class="tp">text</span>,               <span class="cm">-- Zone principale du livreur</span>
+  <span class="cm">-- Position GPS temps réel (mis à jour par l'app livreur)</span>
+  lat             <span class="tp">float8</span>,
+  lng             <span class="tp">float8</span>,
+  location_updated_at <span class="tp">timestamptz</span>,
+  <span class="cm">-- Statut</span>
+  is_online       <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  is_active       <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  is_verified     <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,
+  <span class="cm">-- Stats</span>
+  rating          <span class="tp">float4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  total_deliveries <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  total_earnings  <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  <span class="cm">-- Paiement</span>
+  payment_method  <span class="tp">text</span>,               <span class="cm">-- 'wave', 'orange_money'</span>
+  payment_number  <span class="tp">text</span>,
+  fcm_token       <span class="tp">text</span>,
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="cm">-- Index géospatial pour trouver le livreur le plus proche</span>
+<span class="kw">CREATE INDEX</span> idx_riders_location <span class="kw">ON</span> <span class="tp">riders</span> <span class="kw">USING</span> gist(<span class="fn">ST_MakePoint</span>(lng, lat));</pre>
+  </div>
+</div>
+
+<!-- ═══ 08 COMMANDES ═══ -->
+<div class="section divider" id="s8" style="padding-top:48px;">
+  <span class="section-tag" style="color:var(--red);">08</span>
+  <h2 class="section-title">Commandes</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">orders.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">orders</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  ref             <span class="tp">text</span> <span class="kw">DEFAULT</span> <span class="fn">generate_order_ref</span>() <span class="kw">UNIQUE</span>, <span class="cm">-- FZ-4847</span>
+  type            <span class="tp">text</span> <span class="kw">NOT NULL</span>,       <span class="cm">-- 'market' ou 'food'</span>
+  user_id         <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">users</span>(id),
+  rider_id        <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">riders</span>(id),
+  restaurant_id   <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">restaurants</span>(id),
+
+  <span class="cm">-- Statut (pipeline complet)</span>
+  status          <span class="tp">text</span> <span class="kw">NOT NULL DEFAULT</span> <span class="st">'pending'</span>,
+  <span class="cm">-- pending → accepted → preparing → ready → in_transit → delivered</span>
+  <span class="cm">-- OU : pending → cancelled / rejected</span>
+
+  <span class="cm">-- Articles (snapshot au moment de la commande)</span>
+  items           <span class="tp">jsonb</span> <span class="kw">NOT NULL</span>,      <span class="cm">-- [{product_id, name, qty, price}]</span>
+
+  <span class="cm">-- Montants</span>
+  subtotal        <span class="tp">int4</span> <span class="kw">NOT NULL</span>,
+  delivery_fee    <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">200</span>,
+  discount        <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  total           <span class="tp">int4</span> <span class="kw">NOT NULL</span>,
+
+  <span class="cm">-- Livraison</span>
+  delivery_address <span class="tp">text</span>,
+  delivery_lat    <span class="tp">float8</span>,
+  delivery_lng    <span class="tp">float8</span>,
+  delivery_zone   <span class="tp">text</span>,
+  delivery_notes  <span class="tp">text</span>,
+
+  <span class="cm">-- Paiement</span>
+  payment_method  <span class="tp">text</span>,               <span class="cm">-- 'wave', 'orange', 'mtn', 'card', 'cash'</span>
+  payment_status  <span class="tp">text</span> <span class="kw">DEFAULT</span> <span class="st">'pending'</span>, <span class="cm">-- pending / paid / failed / refunded</span>
+  payment_ref     <span class="tp">text</span>,               <span class="cm">-- Référence CinetPay</span>
+  promo_code      <span class="tp">text</span>,
+
+  <span class="cm">-- Timestamps pipeline</span>
+  accepted_at     <span class="tp">timestamptz</span>,
+  preparing_at    <span class="tp">timestamptz</span>,
+  ready_at        <span class="tp">timestamptz</span>,
+  transit_at      <span class="tp">timestamptz</span>,
+  delivered_at    <span class="tp">timestamptz</span>,
+  cancelled_at    <span class="tp">timestamptz</span>,
+  cancel_reason   <span class="tp">text</span>,
+
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="kw">CREATE INDEX</span> idx_orders_user   <span class="kw">ON</span> <span class="tp">orders</span>(user_id);
+<span class="kw">CREATE INDEX</span> idx_orders_rider  <span class="kw">ON</span> <span class="tp">orders</span>(rider_id);
+<span class="kw">CREATE INDEX</span> idx_orders_status <span class="kw">ON</span> <span class="tp">orders</span>(status);
+<span class="kw">CREATE INDEX</span> idx_orders_date   <span class="kw">ON</span> <span class="tp">orders</span>(created_at <span class="kw">DESC</span>);</pre>
+  </div>
+</div>
+
+<!-- ═══ 09 PROMOS ═══ -->
+<div class="section divider" id="s9" style="padding-top:48px;">
+  <span class="section-tag" style="color:var(--red);">09</span>
+  <h2 class="section-title">Promotions & codes promo</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">promotions.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">promotions</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  code            <span class="tp">text</span> <span class="kw">UNIQUE</span>,          <span class="cm">-- 'FEEZ1', 'BIENVENUE', null = promo auto</span>
+  type            <span class="tp">text</span> <span class="kw">NOT NULL</span>,         <span class="cm">-- 'percent', 'fixed', 'free_delivery'</span>
+  value           <span class="tp">float4</span> <span class="kw">NOT NULL</span>,       <span class="cm">-- 20 (=20%) ou 500 (=500 FCFA)</span>
+  min_order       <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,        <span class="cm">-- Commande min pour appliquer</span>
+  max_discount    <span class="tp">int4</span>,                  <span class="cm">-- Plafond de réduction</span>
+  max_uses        <span class="tp">int4</span>,                  <span class="cm">-- Nombre max d'utilisations</span>
+  used_count      <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">0</span>,
+  max_uses_per_user <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">1</span>,
+  applies_to      <span class="tp">text</span> <span class="kw">DEFAULT</span> <span class="st">'all'</span>,    <span class="cm">-- 'all', 'market', 'food'</span>
+  is_active       <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  starts_at       <span class="tp">timestamptz</span>,
+  expires_at      <span class="tp">timestamptz</span>,
+  created_by      <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">admin_users</span>(id),
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);</pre>
+  </div>
+</div>
+
+<!-- ═══ 10 PAIEMENTS ═══ -->
+<div class="section divider" id="s10" style="padding-top:48px;">
+  <span class="section-tag" style="color:var(--red);">10</span>
+  <h2 class="section-title">Paiements</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">payments.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">payments</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  order_id        <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">orders</span>(id) <span class="kw">UNIQUE</span>,
+  user_id         <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">users</span>(id),
+  amount          <span class="tp">int4</span> <span class="kw">NOT NULL</span>,
+  method          <span class="tp">text</span> <span class="kw">NOT NULL</span>,         <span class="cm">-- 'wave', 'orange_money', 'mtn', 'card', 'cash'</span>
+  status          <span class="tp">text</span> <span class="kw">DEFAULT</span> <span class="st">'pending'</span>,
+  provider_ref    <span class="tp">text</span>,                  <span class="cm">-- ID transaction CinetPay</span>
+  provider_data   <span class="tp">jsonb</span>,                 <span class="cm">-- Réponse complète CinetPay</span>
+  paid_at         <span class="tp">timestamptz</span>,
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">rider_earnings</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  rider_id        <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">riders</span>(id),
+  order_id        <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">orders</span>(id),
+  amount          <span class="tp">int4</span> <span class="kw">NOT NULL</span>,         <span class="cm">-- Rémunération pour cette livraison</span>
+  status          <span class="tp">text</span> <span class="kw">DEFAULT</span> <span class="st">'pending'</span>, <span class="cm">-- pending / paid</span>
+  paid_at         <span class="tp">timestamptz</span>,
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">restaurant_earnings</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  restaurant_id   <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">restaurants</span>(id),
+  order_id        <span class="fn">uuid</span> <span class="kw">REFERENCES</span> <span class="tp">orders</span>(id),
+  gross_amount    <span class="tp">int4</span> <span class="kw">NOT NULL</span>,         <span class="cm">-- Montant total de la commande</span>
+  commission      <span class="tp">int4</span> <span class="kw">NOT NULL</span>,         <span class="cm">-- Part Feez prélevée</span>
+  net_amount      <span class="tp">int4</span> <span class="kw">NOT NULL</span>,         <span class="cm">-- Ce que reçoit le restaurant</span>
+  status          <span class="tp">text</span> <span class="kw">DEFAULT</span> <span class="st">'pending'</span>,
+  paid_at         <span class="tp">timestamptz</span>,
+  created_at      <span class="tp">timestamptz</span> <span class="kw">DEFAULT</span> <span class="fn">NOW</span>()
+);</pre>
+  </div>
+</div>
+
+<!-- ═══ 11 ZONES ═══ -->
+<div class="section divider" id="s11" style="padding-top:48px;">
+  <span class="section-tag" style="color:var(--red);">11</span>
+  <h2 class="section-title">Zones de livraison</h2>
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">zones.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="kw">CREATE TABLE</span> <span class="tp">delivery_zones</span> (
+  id              <span class="fn">uuid</span> <span class="kw">DEFAULT</span> <span class="fn">gen_random_uuid</span>() <span class="kw">PRIMARY KEY</span>,
+  name            <span class="tp">text</span> <span class="kw">NOT NULL UNIQUE</span>,  <span class="cm">-- 'cocody', 'plateau', 'marcory'</span>
+  display_name    <span class="tp">text</span> <span class="kw">NOT NULL</span>,
+  delivery_fee    <span class="tp">int4</span> <span class="kw">DEFAULT</span> <span class="nm">200</span>,      <span class="cm">-- Frais de livraison pour cette zone</span>
+  estimated_time  <span class="tp">text</span>,                  <span class="cm">-- '15-20 min'</span>
+  is_active       <span class="tp">bool</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,
+  polygon         <span class="tp">jsonb</span>                  <span class="cm">-- Coordonnées du polygone de zone</span>
+);
+
+<span class="kw">INSERT INTO</span> <span class="tp">delivery_zones</span> (name, display_name, delivery_fee, estimated_time) <span class="kw">VALUES</span>
+  (<span class="st">'plateau'</span>,    <span class="st">'Plateau'</span>,              <span class="nm">200</span>,  <span class="st">'10-15 min'</span>),
+  (<span class="st">'cocody'</span>,     <span class="st">'Cocody'</span>,               <span class="nm">200</span>,  <span class="st">'15-25 min'</span>),
+  (<span class="st">'marcory'</span>,    <span class="st">'Marcory'</span>,              <span class="nm">250</span>,  <span class="st">'15-20 min'</span>),
+  (<span class="st">'treichville'</span>,<span class="st">'Treichville'</span>,          <span class="nm">200</span>,  <span class="st">'10-20 min'</span>),
+  (<span class="st">'yopougon'</span>,   <span class="st">'Yopougon'</span>,             <span class="nm">500</span>,  <span class="st">'30-45 min'</span>),
+  (<span class="st">'abobo'</span>,      <span class="st">'Abobo'</span>,                <span class="nm">600</span>,  <span class="st">'35-50 min'</span>);</pre>
+  </div>
+</div>
+
+<!-- ═══ 12 RLS ═══ -->
+<div class="section divider" id="s12" style="padding-top:48px;">
+  <span class="section-tag" style="color:#2563EB;">12</span>
+  <h2 class="section-title">Row Level Security (RLS)</h2>
+  <p class="section-sub">Les policies RLS garantissent que chaque utilisateur ne voit que ses propres données. C'est la sécurité côté base de données.</p>
+
+  <div class="info-box note">
+    <span class="ib-icon">🔐</span>
+    <div class="ib-body">
+      <p class="ib-title">Principe RLS</p>
+      <p>Même si quelqu'un obtient ta clé Supabase, il ne peut pas lire les commandes des autres. RLS s'applique au niveau PostgreSQL — impossible à contourner depuis le client Flutter.</p>
+    </div>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-header"><span class="code-label">SQL</span><span class="code-label" style="color:#FFCB6B;">rls_policies.sql</span><button class="code-copy" onclick="copyCode(this)">Copier</button></div>
+    <pre><span class="cm">-- ══ Activer RLS sur toutes les tables ══</span>
+<span class="kw">ALTER TABLE</span> <span class="tp">users</span>                <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">ALTER TABLE</span> <span class="tp">user_addresses</span>      <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">ALTER TABLE</span> <span class="tp">products</span>            <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">ALTER TABLE</span> <span class="tp">inventory</span>           <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">ALTER TABLE</span> <span class="tp">orders</span>              <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">ALTER TABLE</span> <span class="tp">restaurants</span>         <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">ALTER TABLE</span> <span class="tp">riders</span>              <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">ALTER TABLE</span> <span class="tp">payments</span>            <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="cm">-- ══ USERS : chaque user voit seulement son profil ══</span>
+<span class="kw">CREATE POLICY</span> <span class="st">"users_own_data"</span> <span class="kw">ON</span> <span class="tp">users</span>
+  <span class="kw">FOR ALL USING</span> (auth.uid() = id);
+
+<span class="cm">-- ══ ADRESSES : chaque user voit ses adresses ══</span>
+<span class="kw">CREATE POLICY</span> <span class="st">"addresses_own"</span> <span class="kw">ON</span> <span class="tp">user_addresses</span>
+  <span class="kw">FOR ALL USING</span> (auth.uid() = user_id);
+
+<span class="cm">-- ══ PRODUITS : tout le monde peut lire les produits disponibles ══</span>
+<span class="kw">CREATE POLICY</span> <span class="st">"products_public_read"</span> <span class="kw">ON</span> <span class="tp">products</span>
+  <span class="kw">FOR SELECT USING</span> (is_available = <span class="kw">true</span>);
+
+<span class="cm">-- ══ COMMANDES : chaque user voit seulement ses commandes ══</span>
+<span class="kw">CREATE POLICY</span> <span class="st">"orders_own"</span> <span class="kw">ON</span> <span class="tp">orders</span>
+  <span class="kw">FOR SELECT USING</span> (auth.uid() = user_id);
+
+<span class="kw">CREATE POLICY</span> <span class="st">"orders_create"</span> <span class="kw">ON</span> <span class="tp">orders</span>
+  <span class="kw">FOR INSERT WITH CHECK</span> (auth.uid() = user_id);
+
+<span class="cm">-- ══ LIVREURS : voient leurs propres commandes assignées ══</span>
+<span class="kw">CREATE POLICY</span> <span class="st">"riders_own_orders"</span> <span class="kw">ON</span> <span class="tp">orders</span>
+  <span class="kw">FOR UPDATE USING</span> (
+    auth.uid() = (<span class="kw">SELECT</span> auth_id <span class="kw">FROM</span> <span class="tp">riders</span> <span class="kw">WHERE</span> id = rider_id)
+  );
+
+<span class="cm">-- ══ RESTAURANTS : voient leurs propres commandes ══</span>
+<span class="kw">CREATE POLICY</span> <span class="st">"resto_own_orders"</span> <span class="kw">ON</span> <span class="tp">orders</span>
+  <span class="kw">FOR SELECT USING</span> (
+    auth.uid() = (<span class="kw">SELECT</span> owner_auth_id <span class="kw">FROM</span> <span class="tp">restaurants</span> <span class="kw">WHERE</span> id = restaurant_id)
+  );
+
+<span class="cm">-- ══ PAIEMENTS : chaque user voit ses paiements ══</span>
+<span class="kw">CREATE POLICY</span> <span class="st">"payments_own"</span> <span class="kw">ON</span> <span class="tp">payments</span>
+  <span class="kw">FOR SELECT USING</span> (auth.uid() = user_id);
+
+<span class="cm">-- ══ REALTIME : activer pour le suivi des commandes ══</span>
+<span class="kw">ALTER PUBLICATION</span> supabase_realtime <span class="kw">ADD TABLE</span> <span class="tp">orders</span>;
+<span class="kw">ALTER PUBLICATION</span> supabase_realtime <span class="kw">ADD TABLE</span> <span class="tp">riders</span>;    <span class="cm">-- GPS livreur</span></pre>
+  </div>
+
+  <div class="info-box tip">
+    <span class="ib-icon">✅</span>
+    <div class="ib-body">
+      <p class="ib-title">Ordre d'exécution dans Supabase</p>
+      <p>Copier et exécuter les scripts dans cet ordre : <strong>setup.sql → admin_roles.sql → users.sql → products.sql → inventory.sql → restaurants.sql → riders.sql → orders.sql → promotions.sql → payments.sql → zones.sql → rls_policies.sql</strong></p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="doc-footer">
+  <div class="df-logo">fee<span>z</span></div>
+  <div>
+    <p class="df-copy">Schéma Supabase v1.0 — Production Ready</p>
+    <p class="df-copy" style="margin-top:4px;">Abidjan · Côte d'Ivoire · 2025</p>
+  </div>
+</div>
+
+<script>
+window.copyCode = function(btn) {
+  var pre = btn.closest('.code-wrap').querySelector('pre');
+  var text = pre.innerText || pre.textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'Copié ✓'; btn.style.color = '#00C47A';
+    setTimeout(function(){ btn.textContent = 'Copier'; btn.style.color = ''; }, 2000);
+  });
+};
+</script>
+</body>
+</html>

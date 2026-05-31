@@ -1,0 +1,75 @@
+name: feez_client
+description: Feez — Super-app de livraison ultra-rapide · Abidjan
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Backend
+  supabase_flutter: ^2.5.0
+  shared_preferences: ^2.2.3
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^13.2.0
+
+  # Maps & GPS
+  google_maps_flutter: ^2.6.0
+  geolocator: ^11.0.0
+
+  # Notifications
+  firebase_core: ^2.27.0
+  firebase_messaging: ^14.7.20
+
+  # UI
+  cached_network_image: ^3.3.1
+  flutter_svg: ^2.0.10
+  webview_flutter: ^4.7.0
+  shimmer: ^3.0.0
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  riverpod_generator: ^2.4.0
+  build_runner: ^2.4.9
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/svg/
+    - assets/onboarding/
+
+  fonts:
+    - family: BarlowCondensed
+      fonts:
+        - asset: assets/fonts/BarlowCondensed-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BarlowCondensed-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/BarlowCondensed-Black.ttf
+          weight: 900
+        - asset: assets/fonts/BarlowCondensed-BlackItalic.ttf
+          weight: 900
+          style: italic
+    - family: DMSans
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700

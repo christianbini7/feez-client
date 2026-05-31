@@ -33,7 +33,25 @@ jobs:
           cd ${{ steps.proj.outputs.dir }}
           flutter pub get
 
-      - name: Build iOS (flutter handles pods)
+      - name: Create iOS platform if missing
+        run: |
+          cd ${{ steps.proj.outputs.dir }}
+          if [ ! -d "ios/Runner.xcodeproj" ]; then
+            echo "iOS project missing, generating..."
+            flutter create --platforms=ios . --project-name feez_client
+          else
+            echo "iOS project exists"
+          fi
+
+      - name: Fix iOS minimum version
+        run: |
+          cd ${{ steps.proj.outputs.dir }}/ios
+          # Fix Podfile platform version
+          sed -i '' 's/platform :ios.*/platform :ios, '\''14.0'\''/' Podfile 2>/dev/null || true
+          # Fix project deployment target
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' Runner.xcodeproj/project.pbxproj 2>/dev/null || true
+
+      - name: Build iOS
         run: |
           cd ${{ steps.proj.outputs.dir }}
           flutter build ios --release --no-codesign
@@ -44,6 +62,7 @@ jobs:
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r Feez.ipa Payload/
+          echo "IPA: $(du -sh Feez.ipa)"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
